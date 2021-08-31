@@ -27,9 +27,9 @@ namespace Nop.Data
         /// </summary>
         /// <param name="data">Old txt file data</param>
         /// <returns>Data settings</returns>
-        protected static DataSettings LoadDataSettingsFromOldFile(string data)
+        protected static DataConfig LoadDataSettingsFromOldTxtFile(string data)
         {
-            var dataSettings = new DataSettings();
+            var dataSettings = new DataConfig();
             using var reader = new StringReader(data);
             string settingsLine;
             while ((settingsLine = reader.ReadLine()) != null)
@@ -75,10 +75,10 @@ namespace Nop.Data
         /// A task that represents the asynchronous operation
         /// The task result contains the data settings
         /// </returns>
-        public static async Task<DataSettings> LoadSettingsAsync(bool reloadSettings = false, INopFileProvider fileProvider = null)
+        public static async Task<DataConfig> LoadSettingsAsync(bool reloadSettings = false, INopFileProvider fileProvider = null)
         {
-            if (!reloadSettings && Singleton<DataSettings>.Instance != null)
-                return Singleton<DataSettings>.Instance;
+            if (!reloadSettings && Singleton<DataConfig>.Instance != null)
+                return Singleton<DataConfig>.Instance;
 
             fileProvider ??= CommonHelper.DefaultFileProvider;
             var filePath_json = fileProvider.MapPath(NopDataSettingsDefaults.FilePath);
@@ -88,7 +88,7 @@ namespace Nop.Data
 
             if (fileProvider.FileExists(filePath_json) || fileProvider.FileExists(filePath_txt))
             {
-                var dataSettingsObj = new DataSettings();
+                var dataSettingsObj = new DataConfig();
                 //check whether file exists (JSON)
                 if (fileProvider.FileExists(filePath_json))
                 {
@@ -97,13 +97,20 @@ namespace Nop.Data
                         return dataSettingsObj;
 
                     //get data settings from the JSON file
-                    dataSettingsObj = JsonConvert.DeserializeObject<DataSettings>(text);
+                    var jsonDataSettings = JsonConvert.DeserializeObject<DataSettings>(text);
+                    dataSettingsObj = new DataConfig
+                    {
+                        ConnectionString = jsonDataSettings.ConnectionString,
+                        DataProvider = jsonDataSettings.DataProvider,
+                        RawDataSettings = jsonDataSettings.RawDataSettings,
+                        SQLCommandTimeout = jsonDataSettings.SQLCommandTimeout
+                    };
                 }
                 else
                 {
                     if (fileProvider.FileExists(filePath_txt))
                     {
-                        dataSettingsObj = LoadDataSettingsFromOldFile(fileProvider.ReadAllText(filePath_txt, Encoding.UTF8));
+                        dataSettingsObj = LoadDataSettingsFromOldTxtFile(fileProvider.ReadAllText(filePath_txt, Encoding.UTF8));
                         filePath = filePath_txt;
                     }
                 }
@@ -113,22 +120,22 @@ namespace Nop.Data
                 //and delete the old one
                 fileProvider.DeleteFile(filePath);
 
-                Singleton<DataSettings>.Instance = dataSettingsObj;
-                return Singleton<DataSettings>.Instance;
+                Singleton<DataConfig>.Instance = dataSettingsObj;
+                return Singleton<DataConfig>.Instance;
             }
 
             var appSettings = Singleton<AppSettings>.Instance.DataConfig;
 
             //get data settings from the JSON file
-            var dataSettings = new DataSettings
+            var dataSettings = new DataConfig
             {
                 ConnectionString = appSettings.ConnectionString,
                 DataProvider = appSettings.DataProvider,
                 SQLCommandTimeout = appSettings.SQLCommandTimeout
             };
-            Singleton<DataSettings>.Instance = dataSettings;
+            Singleton<DataConfig>.Instance = dataSettings;
 
-            return Singleton<DataSettings>.Instance;
+            return Singleton<DataConfig>.Instance;
         }
 
         /// <summary>
@@ -137,10 +144,10 @@ namespace Nop.Data
         /// <param name="reloadSettings">Whether to reload data, if they already loaded</param>
         /// <param name="fileProvider">File provider</param>
         /// <returns>Data settings</returns>
-        public static DataSettings LoadSettings(bool reloadSettings = false, INopFileProvider fileProvider = null)
+        public static DataConfig LoadSettings(bool reloadSettings = false, INopFileProvider fileProvider = null)
         {
-            if (!reloadSettings && Singleton<DataSettings>.Instance != null)
-                return Singleton<DataSettings>.Instance;
+            if (!reloadSettings && Singleton<DataConfig>.Instance != null)
+                return Singleton<DataConfig>.Instance;
 
             fileProvider ??= CommonHelper.DefaultFileProvider;
             var filePath_json = fileProvider.MapPath(NopDataSettingsDefaults.FilePath);
@@ -150,7 +157,7 @@ namespace Nop.Data
 
             if (fileProvider.FileExists(filePath_json) || fileProvider.FileExists(filePath_txt))
             {
-                var dataSettingsObj = new DataSettings();
+                var dataSettingsObj = new DataConfig();
                 //check whether file exists (JSON)
                 if (fileProvider.FileExists(filePath_json))
                 {
@@ -159,13 +166,20 @@ namespace Nop.Data
                         return dataSettingsObj;
 
                     //get data settings from the JSON file
-                    dataSettingsObj = JsonConvert.DeserializeObject<DataSettings>(text);
+                    var jsonDataSettings = JsonConvert.DeserializeObject<DataSettings>(text);
+                    dataSettingsObj = new DataConfig
+                    {
+                        ConnectionString = jsonDataSettings.ConnectionString,
+                        DataProvider = jsonDataSettings.DataProvider,
+                        RawDataSettings = jsonDataSettings.RawDataSettings,
+                        SQLCommandTimeout = jsonDataSettings.SQLCommandTimeout
+                    };
                 }
                 else
                 {
                     if (fileProvider.FileExists(filePath_txt))
                     {
-                        dataSettingsObj = LoadDataSettingsFromOldFile(fileProvider.ReadAllText(filePath_txt, Encoding.UTF8));
+                        dataSettingsObj = LoadDataSettingsFromOldTxtFile(fileProvider.ReadAllText(filePath_txt, Encoding.UTF8));
                         filePath = filePath_txt;
                     }
                 }
@@ -175,23 +189,23 @@ namespace Nop.Data
                 //and delete the old one
                 fileProvider.DeleteFile(filePath);
 
-                Singleton<DataSettings>.Instance = dataSettingsObj;
-                return Singleton<DataSettings>.Instance;
+                Singleton<DataConfig>.Instance = dataSettingsObj;
+                return Singleton<DataConfig>.Instance;
             }
             
             var appSettings = Singleton<AppSettings>.Instance.DataConfig;
 
             //get data settings from the JSON file
-            var dataSettings = new DataSettings
+            var dataSettings = new DataConfig
             {
                 ConnectionString = appSettings.ConnectionString,
                 DataProvider = appSettings.DataProvider,
                 SQLCommandTimeout = appSettings.SQLCommandTimeout
             };
 
-            Singleton<DataSettings>.Instance = dataSettings;
+            Singleton<DataConfig>.Instance = dataSettings;
 
-            return Singleton<DataSettings>.Instance;
+            return Singleton<DataConfig>.Instance;
         }
 
         /// <summary>
@@ -200,9 +214,9 @@ namespace Nop.Data
         /// <param name="settings">Data settings</param>
         /// <param name="fileProvider">File provider</param>
         /// <returns>A task that represents the asynchronous operation</returns>
-        public static async Task SaveSettingsAsync(DataSettings settings, INopFileProvider fileProvider = null)
+        public static async Task SaveSettingsAsync(DataConfig settings, INopFileProvider fileProvider = null)
         {
-            Singleton<DataSettings>.Instance = settings ?? throw new ArgumentNullException(nameof(settings));
+            Singleton<DataConfig>.Instance = settings ?? throw new ArgumentNullException(nameof(settings));
 
             fileProvider ??= CommonHelper.DefaultFileProvider;
             var filePath = fileProvider.MapPath(NopDataSettingsDefaults.AppSettingsFilePath);
@@ -234,9 +248,9 @@ namespace Nop.Data
         /// </summary>
         /// <param name="settings">Data settings</param>
         /// <param name="fileProvider">File provider</param>
-        public static void SaveSettings(DataSettings settings, INopFileProvider fileProvider = null)
+        public static void SaveSettings(DataConfig settings, INopFileProvider fileProvider = null)
         {
-            Singleton<DataSettings>.Instance = settings ?? throw new ArgumentNullException(nameof(settings));
+            Singleton<DataConfig>.Instance = settings ?? throw new ArgumentNullException(nameof(settings));
 
             fileProvider ??= CommonHelper.DefaultFileProvider;
             var filePath = fileProvider.MapPath(NopDataSettingsDefaults.AppSettingsFilePath);

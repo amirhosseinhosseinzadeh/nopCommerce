@@ -28,6 +28,5 @@ namespace Nop.Core.Configuration
         /// Gets or sets a raw settings
         /// </summary>
         public IDictionary<string, string> RawDataSettings { get; set; } = new Dictionary<string, string>();
-
     }
 }
